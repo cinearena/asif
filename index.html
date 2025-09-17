@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Fancode Live Matches</title>
-  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
   <style>
     body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 20px; }
     .matches { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
@@ -34,130 +33,58 @@
       transition: background 0.2s;
     }
     .play-btn:hover { background: #0056b3; }
-
-    /* Popup Modal */
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.8);
-      justify-content: center;
-      align-items: center;
-    }
-    .modal-content {
-      position: relative;
-      background: #000;
-      padding: 0;
-      border-radius: 10px;
-      max-width: 900px;
-      width: 95%;
-    }
-    .close-btn {
-      position: absolute;
-      top: 10px; right: 15px;
-      font-size: 22px;
-      color: #fff;
-      cursor: pointer;
-      z-index: 1001;
-    }
-    video {
-      width: 100%;
-      border-radius: 10px;
-    }
   </style>
 </head>
 <body>
   <h1>📺 Fancode Live Matches</h1>
   <div id="matches" class="matches"></div>
 
-  <!-- Popup Modal -->
-  <div id="videoModal" class="modal">
-    <div class="modal-content">
-      <span class="close-btn">&times;</span>
-      <video id="player" controls playsinline></video>
-    </div>
-  </div>
-
-  <!-- Plyr + Hls.js -->
   <script>
-  const modal = document.getElementById("videoModal");
-  const closeBtn = document.querySelector(".close-btn");
-  const video = document.getElementById("player");
-  const player = new Plyr(video, { autoplay: true });
+    async function loadMatches() {
+      const url = "https://raw.githubusercontent.com/drmlive/fancode-live-events/main/fancode.json";
+      const response = await fetch(url);
+      const data = await response.json();
 
-  closeBtn.onclick = () => {
-    modal.style.display = "none";
-    player.stop();
-    video.src = "";
-  };
-  window.onclick = (e) => { if (e.target === modal) closeBtn.click(); };
+      const matchesDiv = document.getElementById("matches");
 
-  async function loadMatches() {
-    const url = "https://raw.githubusercontent.com/drmlive/fancode-live-events/main/fancode.json";
-    const response = await fetch(url);
-    const data = await response.json();
+      data.matches.forEach(match => {
+        const card = document.createElement("div");
+        card.className = "match-card";
 
-    const matchesDiv = document.getElementById("matches");
+        card.innerHTML = `
+          <img src="${match.src}" alt="${match.match_name}">
+          <div class="match-info">
+            <h3>${match.title}</h3>
+            <p><strong>${match.team_1}</strong> vs <strong>${match.team_2}</strong></p>
+            <p>🏆 ${match.event_name}</p>
+            <p>🕒 ${match.startTime}</p>
+            <p class="status ${match.status}">${match.status}</p>
+          </div>
+          <button class="play-btn">▶ Play</button>
+        `;
 
-    data.matches.forEach(match => {
-      const card = document.createElement("div");
-      card.className = "match-card";
+        card.querySelector(".play-btn").addEventListener("click", () => {
+          if (match.dai_url) {
+            // Trim dai_url after .m3u8
+            let cleanUrl = match.dai_url;
+            const idx = cleanUrl.indexOf(".m3u8");
+            if (idx !== -1) {
+              cleanUrl = cleanUrl.substring(0, idx + 5);
+            }
+            console.log("Opening cleaned dai_url:", cleanUrl);
 
-      card.innerHTML = `
-        <img src="${match.src}" alt="${match.match_name}">
-        <div class="match-info">
-          <h3>${match.title}</h3>
-          <p><strong>${match.team_1}</strong> vs <strong>${match.team_2}</strong></p>
-          <p>🏆 ${match.event_name}</p>
-          <p>🕒 ${match.startTime}</p>
-          <p class="status ${match.status}">${match.status}</p>
-        </div>
-        <button class="play-btn">▶ Play</button>
-      `;
-
-      card.querySelector(".play-btn").addEventListener("click", () => {
-        if (match.dai_url) {
-          // Trim dai_url to remove auth/licence parts, keep only until .m3u8
-          let cleanUrl = match.dai_url;
-          const idx = cleanUrl.indexOf(".m3u8");
-          if (idx !== -1) {
-            cleanUrl = cleanUrl.substring(0, idx + 5);
-          }
-
-          console.log("Playing cleaned dai_url:", cleanUrl);
-          modal.style.display = "flex";
-
-          if (Hls.isSupported()) {
-            const hls = new Hls({ debug: false });
-            hls.loadSource(cleanUrl);
-            hls.attachMedia(video);
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
-              video.play();
-            });
-            hls.on(Hls.Events.ERROR, function (event, data) {
-              console.error("Hls.js error:", data);
-            });
-          } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-            video.src = cleanUrl;
-            video.play();
+            // Open cleaned .m3u8 link in new blank tab
+            window.open(cleanUrl, "_blank");
           } else {
-            alert("Your browser does not support HLS playback.");
+            alert("No dai_url available for this match!");
           }
-        } else {
-          alert("No dai_url available for this match!");
-        }
+        });
+
+        matchesDiv.appendChild(card);
       });
+    }
 
-      matchesDiv.appendChild(card);
-    });
-  }
-
-  loadMatches();
-</script>
-
-
-
+    loadMatches();
+  </script>
 </body>
 </html>
