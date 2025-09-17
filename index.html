@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Fancode Live Matches</title>
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
   <style>
     body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 20px; }
     .matches { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
@@ -33,15 +34,69 @@
       transition: background 0.2s;
     }
     .play-btn:hover { background: #0056b3; }
+
+    /* Popup Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      position: relative;
+      background: #000;
+      padding: 0;
+      border-radius: 10px;
+      max-width: 800px;
+      width: 90%;
+    }
+    .close-btn {
+      position: absolute;
+      top: 10px; right: 15px;
+      font-size: 22px;
+      color: #fff;
+      cursor: pointer;
+      z-index: 1001;
+    }
+    video {
+      width: 100%;
+      border-radius: 10px;
+    }
   </style>
 </head>
 <body>
   <h1>📺 Fancode Live Matches</h1>
   <div id="matches" class="matches"></div>
 
+  <!-- Popup Modal -->
+  <div id="videoModal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn">&times;</span>
+      <video id="player" controls playsinline></video>
+    </div>
+  </div>
+
+  <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+
   <script>
+    const modal = document.getElementById("videoModal");
+    const closeBtn = document.querySelector(".close-btn");
+    const video = document.getElementById("player");
+    const player = new Plyr(video);
+
+    closeBtn.onclick = () => {
+      modal.style.display = "none";
+      player.stop();
+      video.src = "";
+    };
+    window.onclick = (e) => { if (e.target === modal) closeBtn.click(); };
+
     async function loadMatches() {
-      // Fetch JSON from GitHub
       const url = "https://raw.githubusercontent.com/drmlive/fancode-live-events/main/fancode.json";
       const response = await fetch(url);
       const data = await response.json();
@@ -64,58 +119,20 @@
           <button class="play-btn">▶ Play</button>
         `;
 
-        // Play button → open player in new tab
+        // Play button -> open in modal with Plyr
         card.querySelector(".play-btn").addEventListener("click", () => {
           if (match.dai_url) {
-            const playerPage = `
-              <!DOCTYPE html>
-              <html lang="en">
-              <head>
-                <meta charset="UTF-8">
-                <title>${match.title} - Live</title>
-                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/plyr@3.7.8/dist/plyr.css" />
-                <style>
-                  body { margin:0; background:#000; display:flex; justify-content:center; align-items:center; height:100vh; flex-direction:column; color:#fff; }
-                  video { width:100%; height:auto; max-height:90vh; }
-                  h2 { margin:10px; font-family:Arial, sans-serif; }
-                  .back-btn {
-                    position: fixed;
-                    top: 15px;
-                    left: 15px;
-                    padding: 8px 12px;
-                    background: #007bff;
-                    color: #fff;
-                    border: none;
-                    border-radius: 6px;
-                    cursor: pointer;
-                  }
-                </style>
-              </head>
-              <body>
-                <button class="back-btn" onclick="window.close()">⬅ Back</button>
-                <h2>${match.team_1} vs ${match.team_2}</h2>
-                <video id="player" controls autoplay playsinline></video>
-                <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-                <script src="https://cdn.jsdelivr.net/npm/plyr@3.7.8/dist/plyr.polyfilled.js"></script>
-                <script>
-                  const video = document.getElementById('player');
-                  const source = "${match.dai_url}";
-                  if (Hls.isSupported()) {
-                    const hls = new Hls();
-                    hls.loadSource(source);
-                    hls.attachMedia(video);
-                  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                    video.src = source;
-                  }
-                  new Plyr(video, { autoplay:true });
-                </script>
-              </body>
-              </html>
-            `;
+            modal.style.display = "flex";
 
-            const newTab = window.open();
-            newTab.document.write(playerPage);
-            newTab.document.close();
+            if (Hls.isSupported()) {
+              const hls = new Hls();
+              hls.loadSource(match.dai_url);
+              hls.attachMedia(video);
+              hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+            } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+              video.src = match.dai_url;
+              video.play();
+            }
           } else {
             alert("No dai_url available for this match!");
           }
