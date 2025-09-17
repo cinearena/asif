@@ -65,15 +65,11 @@
 
         card.querySelector(".play-btn").addEventListener("click", () => {
           if (match.dai_url) {
-            // Trim dai_url after .m3u8
-            let cleanUrl = match.dai_url;
-            const idx = cleanUrl.indexOf(".m3u8");
-            if (idx !== -1) {
-              cleanUrl = cleanUrl.substring(0, idx + 5);
-            }
+            // Trim everything after '?'
+            let cleanUrl = match.dai_url.split("?")[0];
             console.log("Opening cleaned dai_url:", cleanUrl);
 
-            // Open cleaned .m3u8 link in new blank tab
+            // Open clean dai_url in new tab
             window.open(cleanUrl, "_blank");
           } else {
             alert("No dai_url available for this match!");
