@@ -64,19 +64,10 @@
           <button class="play-btn">▶ Play</button>
         `;
 
-        // Handle play button click
-        card.querySelector(".play-btn").addEventListener("click", async () => {
-          // Fetch link based on match id
-          const linkUrl = `https://raw.githubusercontent.com/drmlive/fancode-live-events/main/links/${match.id}.json`; 
-          const linkResponse = await fetch(linkUrl);
-          const linkData = await linkResponse.json();
-
-          // Open the m3u8 link in new tab
-          if (linkData.link) {
-            window.open(linkData.link, "_blank");
-          } else {
-            alert("No stream link available for this match!");
-          }
+        // Play button -> build m3u8 link using match.id
+        card.querySelector(".play-btn").addEventListener("click", () => {
+          const streamLink = `https://raw.githubusercontent.com/drmlive/fancode-live-events/main/streams/${match.id}.m3u8`;
+          window.open(streamLink, "_blank");
         });
 
         matchesDiv.appendChild(card);
