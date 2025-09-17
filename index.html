@@ -129,7 +129,7 @@
               const hls = new Hls({
                 xhrSetup: (xhr) => {
                   // Add headers here if needed for auth
-                  // xhr.setRequestHeader("Authorization", "Bearer xyz");
+                  xhr.setRequestHeader("Authorization", "Bearer xyz");
                 }
               });
               hls.loadSource(match.dai_url);  // Full dai_url with ?hdnea=token works fine
