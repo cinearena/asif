@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -51,7 +52,7 @@
         const card = document.createElement("div");
         card.className = "match-card";
 
-        card.innerHTML = '
+        card.innerHTML = `
           <img src="${match.src}" alt="${match.match_name}">
           <div class="match-info">
             <h3>${match.title}</h3>
@@ -66,8 +67,9 @@
         card.querySelector(".play-btn").addEventListener("click", () => {
           if (match.adfree_url) {
             // Cut everything after `.m3u8`
-            
-            window.open(${match.adfree_url}"_blank");
+            let cleanUrl = ${match.adfree_url};
+            console.log("Opening clean adfree_url:", cleanUrl);
+            window.open(cleanUrl, "_blank");
           } else {
             alert("No adfree_url available for this match!");
           }
