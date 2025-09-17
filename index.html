@@ -64,10 +64,13 @@
           <button class="play-btn">▶ Play</button>
         `;
 
-        // Play button -> build m3u8 link using match.id
+        // Play button -> open dai_url in new tab
         card.querySelector(".play-btn").addEventListener("click", () => {
-          const streamLink = `https://raw.githubusercontent.com/drmlive/fancode-live-events/main/streams/${match.id}.m3u8`;
-          window.open(streamLink, "_blank");
+          if (match.dai_url) {
+            window.open(match.dai_url, "_blank");
+          } else {
+            alert("No dai_url available for this match!");
+          }
         });
 
         matchesDiv.appendChild(card);
