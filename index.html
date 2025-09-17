@@ -64,15 +64,18 @@
         `;
 
         card.querySelector(".play-btn").addEventListener("click", () => {
-          if (match.dai_url) {
-            // Trim everything after '?'
-            let cleanUrl = match.dai_url.split("?")[0];
-            console.log("Opening cleaned dai_url:", cleanUrl);
-
-            // Open clean dai_url in new tab
-            window.open(cleanUrl, "_blank");
+          if (match.adfree_url) {
+            // Find `.m3u8` and cut everything after it
+            const index = match.adfree_url.indexOf(".m3u8");
+            if (index !== -1) {
+              const cleanUrl = match.adfree_url.substring(0, index + 5); // keep `.m3u8`
+              console.log("Opening adfree_url:", cleanUrl);
+              window.open(cleanUrl, "_blank");
+            } else {
+              alert("No valid .m3u8 found in adfree_url!");
+            }
           } else {
-            alert("No dai_url available for this match!");
+            alert("No adfree_url available for this match!");
           }
         });
 
