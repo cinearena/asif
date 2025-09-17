@@ -64,10 +64,16 @@
           <button class="play-btn">▶ Play</button>
         `;
 
-        // Play button -> open dai_url in new tab
+        // Play button -> extract only last .m3u8 from dai_url
         card.querySelector(".play-btn").addEventListener("click", () => {
           if (match.dai_url) {
-            window.open(match.dai_url, "_blank");
+            // Extract substring ending with .m3u8
+            const m3u8Match = match.dai_url.match(/https?:\/\/[^\\s]+\.m3u8/);
+            if (m3u8Match) {
+              window.open(m3u8Match[0], "_blank");
+            } else {
+              alert("No valid .m3u8 found in dai_url!");
+            }
           } else {
             alert("No dai_url available for this match!");
           }
