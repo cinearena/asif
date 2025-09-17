@@ -82,73 +82,88 @@
 
   <!-- Plyr + Hls.js -->
   <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
 
-  <script>
-    const modal = document.getElementById("videoModal");
-    const closeBtn = document.querySelector(".close-btn");
-    const video = document.getElementById("player");
-    const player = new Plyr(video, { autoplay: true });
+<script>
+  const modal = document.getElementById("videoModal");
+  const closeBtn = document.querySelector(".close-btn");
+  const video = document.getElementById("player");
+  const player = new Plyr(video, { autoplay: true });
 
-    closeBtn.onclick = () => {
-      modal.style.display = "none";
-      player.stop();
-      video.src = "";
-    };
-    window.onclick = (e) => { if (e.target === modal) closeBtn.click(); };
+  closeBtn.onclick = () => {
+    modal.style.display = "none";
+    player.stop();
+    video.src = "";
+  };
+  window.onclick = (e) => { if (e.target === modal) closeBtn.click(); };
 
-    async function loadMatches() {
-      const url = "https://raw.githubusercontent.com/drmlive/fancode-live-events/main/fancode.json";
-      const response = await fetch(url);
-      const data = await response.json();
+  async function loadMatches() {
+    const url = "https://raw.githubusercontent.com/drmlive/fancode-live-events/main/fancode.json";
+    const response = await fetch(url);
+    const data = await response.json();
 
-      const matchesDiv = document.getElementById("matches");
+    const matchesDiv = document.getElementById("matches");
 
-      data.matches.forEach(match => {
-        const card = document.createElement("div");
-        card.className = "match-card";
+    data.matches.forEach(match => {
+      const card = document.createElement("div");
+      card.className = "match-card";
 
-        card.innerHTML = `
-          <img src="${match.src}" alt="${match.match_name}">
-          <div class="match-info">
-            <h3>${match.title}</h3>
-            <p><strong>${match.team_1}</strong> vs <strong>${match.team_2}</strong></p>
-            <p>🏆 ${match.event_name}</p>
-            <p>🕒 ${match.startTime}</p>
-            <p class="status ${match.status}">${match.status}</p>
-          </div>
-          <button class="play-btn">▶ Play</button>
-        `;
+      card.innerHTML = `
+        <img src="${match.src}" alt="${match.match_name}">
+        <div class="match-info">
+          <h3>${match.title}</h3>
+          <p><strong>${match.team_1}</strong> vs <strong>${match.team_2}</strong></p>
+          <p>🏆 ${match.event_name}</p>
+          <p>🕒 ${match.startTime}</p>
+          <p class="status ${match.status}">${match.status}</p>
+        </div>
+        <button class="play-btn">▶ Play</button>
+      `;
 
-        // Play button -> open in modal with Plyr + Hls.js
-        card.querySelector(".play-btn").addEventListener("click", () => {
-          if (match.dai_url) {
-            modal.style.display = "flex";
+      card.querySelector(".play-btn").addEventListener("click", () => {
+        if (match.dai_url) {
+          console.log("Playing dai_url:", match.dai_url);
+          modal.style.display = "flex";
 
-            if (Hls.isSupported()) {
-              const hls = new Hls({
-                xhrSetup: (xhr) => {
-                  // Add headers here if needed for auth
-                  xhr.setRequestHeader("Authorization", "Bearer xyz");
-                }
-              });
-              hls.loadSource(match.dai_url);  // Full dai_url with ?hdnea=token works fine
-              hls.attachMedia(video);
-              hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-            } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-              video.src = match.dai_url;
+          if (Hls.isSupported()) {
+            const hls = new Hls({
+              debug: true, // log all events
+              xhrSetup: (xhr) => {
+                // Uncomment if you need auth headers
+                xhr.setRequestHeader("Authorization", "Bearer xyz");
+              }
+            });
+
+            hls.loadSource(match.dai_url);
+            hls.attachMedia(video);
+
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+              console.log("Manifest loaded, starting playback...");
               video.play();
-            }
+            });
+
+            hls.on(Hls.Events.ERROR, function (event, data) {
+              console.error("Hls.js error:", data);
+            });
+
+          } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+            video.src = match.dai_url;
+            video.play();
           } else {
-            alert("No dai_url available for this match!");
+            alert("Your browser does not support HLS playback.");
           }
-        });
-
-        matchesDiv.appendChild(card);
+        } else {
+          alert("No dai_url available for this match!");
+        }
       });
-    }
 
-    loadMatches();
-  </script>
+      matchesDiv.appendChild(card);
+    });
+  }
+
+  loadMatches();
+</script > 
+
+
 </body>
 </html>
