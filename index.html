@@ -6,14 +6,14 @@
   <style>
     body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 20px; }
     .matches { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
-    .match-card { 
-      background: #fff; 
-      padding: 15px; 
-      border-radius: 10px; 
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-      display: flex; 
+    .match-card {
+      background: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      display: flex;
       flex-direction: column;
-      align-items: center; 
+      align-items: center;
       text-align: center;
       transition: transform 0.2s;
     }
@@ -22,14 +22,14 @@
     .match-info { flex: 1; }
     .status { font-weight: bold; color: green; }
     .status.UPCOMING { color: orange; }
-    .play-btn { 
-      margin-top: 10px; 
-      padding: 8px 12px; 
-      background: #007bff; 
-      color: white; 
-      border: none; 
-      border-radius: 6px; 
-      cursor: pointer; 
+    .play-btn {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
       transition: background 0.2s;
     }
     .play-btn:hover { background: #0056b3; }
@@ -41,7 +41,6 @@
 
   <script>
     async function loadMatches() {
-      // Fetch raw JSON from GitHub
       const url = "https://raw.githubusercontent.com/drmlive/fancode-live-events/main/fancode.json";
       const response = await fetch(url);
       const data = await response.json();
@@ -64,14 +63,60 @@
           <button class="play-btn">▶ Play</button>
         `;
 
-        // Play button -> cut dai_url after .m3u8
+        // Play button → open new tab with Plyr.js video player
         card.querySelector(".play-btn").addEventListener("click", () => {
           if (match.dai_url) {
-            // Find `.m3u8` and trim everything after it
             const index = match.dai_url.indexOf(".m3u8");
             if (index !== -1) {
               const cleanLink = match.dai_url.substring(0, index + 5); // keep `.m3u8`
-              window.open(cleanLink, "_blank");
+
+              const playerPage = `
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                  <meta charset="UTF-8">
+                  <title>${match.title} - Live</title>
+                  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/plyr@3.7.8/dist/plyr.css" />
+                  <style>
+                    body { margin:0; background:#000; display:flex; justify-content:center; align-items:center; height:100vh; }
+                    video { width:100%; height:auto; max-height:100vh; }
+                    .back-btn {
+                      position: fixed;
+                      top: 15px;
+                      left: 15px;
+                      padding: 8px 12px;
+                      background: #007bff;
+                      color: #fff;
+                      border: none;
+                      border-radius: 6px;
+                      cursor: pointer;
+                    }
+                  </style>
+                </head>
+                <body>
+                  <button class="back-btn" onclick="window.close()">⬅ Back</button>
+                  <video id="player" controls autoplay playsinline></video>
+                  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+                  <script src="https://cdn.jsdelivr.net/npm/plyr@3.7.8/dist/plyr.polyfilled.js"></script>
+                  <script>
+                    const video = document.getElementById('player');
+                    const source = "${cleanLink}";
+                    if (Hls.isSupported()) {
+                      const hls = new Hls();
+                      hls.loadSource(source);
+                      hls.attachMedia(video);
+                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                      video.src = source;
+                    }
+                    new Plyr(video);
+                  </script>
+                </body>
+                </html>
+              `;
+
+              const newTab = window.open();
+              newTab.document.write(playerPage);
+              newTab.document.close();
             } else {
               alert("No valid .m3u8 found in dai_url!");
             }
