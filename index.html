@@ -1,259 +1,91 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Fancode Matches Player — Demo</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fancode Matches</title>
   <style>
-    :root{font-family:system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial}
-    body{margin:0;padding:18px;background:#0f1724;color:#e6eef8}
-    .container{max-width:1100px;margin:0 auto}
-    header{display:flex;align-items:center;gap:12px}
-    header h1{font-size:18px;margin:0}
-    .controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
-    select,input{padding:8px;border-radius:8px;border:1px solid #243046;background:#0b1220;color:#e6eef8}
-    .grid{display:grid;grid-template-columns:320px 1fr;gap:14px}
-    .list{max-height:70vh;overflow:auto;padding:8px;border-radius:8px;background:#07101a}
-    .match{display:flex;gap:10px;padding:8px;border-radius:8px;align-items:center;border:1px solid #11202b;margin-bottom:8px}
-    .match img{width:76px;height:44px;object-fit:cover;border-radius:6px}
-    .meta{flex:1}
-    .meta strong{display:block}
-    .meta small{opacity:.8;display:block}
-    .btn{padding:6px 10px;border-radius:8px;border:0;background:#1e88e5;color:white;cursor:pointer}
-    .btn.ghost{background:transparent;border:1px solid #2b4a66}
-    .player{background:#071019;border-radius:8px;padding:12px;height:70vh;display:flex;flex-direction:column}
-    .video-wrap{flex:1;background:#000;border-radius:6px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-    video,iframe{width:100%;height:100%;border:0}
-    .info{margin-top:8px;display:flex;gap:8px;align-items:center;justify-content:space-between}
-    .notice{font-size:13px;color:#9fb0c6}
-    footer{margin-top:12px;font-size:13px;color:#9fb0c6}
-    @media(max-width:900px){.grid{grid-template-columns:1fr;}.list{max-height:40vh}}
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f8f9fa;
+    }
+    h1 {
+      text-align: center;
+      padding: 1rem;
+      background: #343a40;
+      color: white;
+      margin: 0;
+    }
+    .matches {
+      display: grid;
+      gap: 1rem;
+      padding: 1rem;
+    }
+    .card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .card:hover {
+      transform: scale(1.03);
+    }
+    .card h3 {
+      margin: 0 0 0.5rem 0;
+    }
+    .card p {
+      margin: 0.25rem 0;
+      color: #555;
+    }
+    @media (max-width: 768px) {
+      .matches {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (min-width: 769px) {
+      .matches {
+        grid-template-columns: repeat(5, 1fr);
+      }
+    }
   </style>
-  <!-- hls.js will be used for HLS (.m3u8) playback in browsers that don't natively support it -->
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.0/dist/hls.min.js"></script>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>Fancode Matches — Video Player Demo</h1>
-      <small class="notice">(Demo uses data embedded in the page. If match has no direct video URL we try to open the Fancode match page.)</small>
-    </header>
+  <h1>Fancode Matches</h1>
+  <div class="matches" id="matches"></div>
 
-    <div class="controls">
-      <select id="filterSport">
-        <option value="all">All sports</option>
-      </select>
-      <select id="filterStatus">
-        <option value="all">All status</option>
-        <option value="LIVE">LIVE</option>
-        <option value="UPCOMING">UPCOMING</option>
-      </select>
-      <input id="search" placeholder="Search team or title" />
-      <button id="sortTime" class="btn ghost">Sort by start time ▲</button>
-      <button id="showAll" class="btn">Show all</button>
-    </div>
+  <script>
+    const data = {
+      "matches": [
+        {"id": "cricket-001", "title": "India vs Australia", "sport": "Cricket", "status": "live"},
+        {"id": "football-001", "title": "FC Barcelona vs Real Madrid", "sport": "Football", "status": "upcoming"},
+        {"id": "baseball-001", "title": "Yankees vs Red Sox", "sport": "Baseball", "status": "live"},
+        {"id": "golf-001", "title": "PGA Tour Finals", "sport": "Golf", "status": "upcoming"}
+      ]
+    };
 
-    <div class="grid">
-      <aside class="list" id="matchesList"></aside>
+    const container = document.getElementById('matches');
 
-      <main class="player">
-        <div class="video-wrap" id="videoWrap">
-          <div id="placeholder" style="color:#9fb0c6;text-align:center;padding:20px">Select a match to play — player supports HLS (.m3u8) and MP4 if provided.</div>
-        </div>
-        <div class="info">
-          <div>
-            <div id="nowTitle"><strong></strong></div>
-            <div id="nowMeta" style="font-size:13px;color:#9fb0c6"></div>
-          </div>
-          <div>
-            <button id="openInNewTab" class="btn ghost">Open match page</button>
-            <button id="downloadVideo" class="btn">Download</button>
-          </div>
-        </div>
-        <footer>
-          Tip: if a direct stream URL is missing the player will attempt to embed the Fancode match page — some sites prevent embedding; if that happens the page will open in a new tab.
-        </footer>
-      </main>
-    </div>
-  </div>
-
-<script>
-// === EMBEDDED DATA (from user) ===
-const data = {
-    "name": "Fancode Live Matches Data in Json",
-    "telegram": "https://t.me/+rQTz5VL8CRpjNTZl",
-    "last update time": "10:37:39 AM 17-09-2025",
-    "matches": [
-        {
-            "event_category": "Cricket",
-            "title": "Queensland vs Victoria (One Day Cup, 2025-26)",
-            "src": "https://www.fancode.com/skillup-uploads/cms-media/133929_5606_QUN_VCT_fc-web.jpg",
-            "team_1": "Queensland",
-            "team_2": "Victoria",
-            "status": "LIVE",
-            "event_name": "One Day Cup, 2025-26",
-            "match_name": "Queensland vs Victoria",
-            "match_id": 133929,
-            "startTime": "05:00:00 AM 17-09-2025",
-            "dai_url": null,
-            "adfree_url": null
-        },
-        {
-            "event_category": "Baseball",
-            "title": "Los Angeles Dodgers vs Philadelphia Phillies (Major League Baseball, 2025)",
-            "src": "https://www.fancode.com/skillup-uploads/cms-media/136902_5028_LAD_PHP_FC-Web.jpg",
-            "team_1": "Los Angeles Dodgers",
-            "team_2": "Philadelphia Phillies",
-            "status": "LIVE",
-            "event_name": "Major League Baseball, 2025",
-            "match_name": "Los Angeles Dodgers vs Philadelphia Phillies",
-            "match_id": 136902,
-            "startTime": "07:40:00 AM 17-09-2025",
-            "dai_url": null,
-            "adfree_url": null
-        },
-        // ... (rest of matches) ...
-    ]
-};
-
-// NOTE: For brevity I removed the rest of matches from the embedded copy above.
-// In a real deployment paste the full JSON or fetch it from an API.
-
-// === Utility functions ===
-function formatStartTime(s){ return s || '—'; }
-
-// Build sport filter options
-const sportSet = new Set(data.matches.map(m=>m.event_category));
-const filterSport = document.getElementById('filterSport');
-sportSet.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;filterSport.appendChild(o);});
-
-let sortAscending = true;
-const matchesList = document.getElementById('matchesList');
-const videoWrap = document.getElementById('videoWrap');
-const nowTitle = document.getElementById('nowTitle');
-const nowMeta = document.getElementById('nowMeta');
-const openInNewTab = document.getElementById('openInNewTab');
-const downloadVideo = document.getElementById('downloadVideo');
-
-function clearVideo(){ videoWrap.innerHTML = '<div id="placeholder" style="color:#9fb0c6;text-align:center;padding:20px">Select a match to play — player supports HLS (.m3u8) and MP4 if provided.</div>'; nowTitle.querySelector('strong').textContent=''; nowMeta.textContent=''; }
-
-function tryPlaySource(srcUrl){
-  // remove previous
-  videoWrap.innerHTML='';
-  if(!srcUrl){ clearVideo(); return false; }
-  // if it's an HLS stream (.m3u8)
-  if(srcUrl.endsWith('.m3u8')){
-    const video = document.createElement('video'); video.controls = true; video.autoplay = true;
-    videoWrap.appendChild(video);
-    if(Hls.isSupported()){
-      const hls = new Hls(); hls.loadSource(srcUrl); hls.attachMedia(video);
-      return true;
-    } else if(video.canPlayType('application/vnd.apple.mpegurl')){
-      video.src = srcUrl; return true;
-    } else {
-      clearVideo(); return false;
-    }
-  }
-  // if direct mp4 or other progressive format
-  if(srcUrl.match(/\.(mp4|webm|ogg)(\?.*)?$/i)){
-    const video = document.createElement('video'); video.controls = true; video.autoplay = true; video.src = srcUrl; videoWrap.appendChild(video); return true;
-  }
-  // otherwise try iframe (embedding site page)
-  const iframe = document.createElement('iframe'); iframe.src = srcUrl; iframe.allow = 'autoplay; fullscreen'; videoWrap.appendChild(iframe); return true;
-}
-
-function renderList(matches){
-  matchesList.innerHTML='';
-  matches.forEach(m=>{
-    const el = document.createElement('div'); el.className='match';
-    el.innerHTML = `
-      <img src="${m.src||''}" alt="${escapeHtml(m.title||m.match_name||'')}">
-      <div class="meta">
-        <strong>${escapeHtml(m.title||m.match_name||'Untitled')}</strong>
-        <small>${escapeHtml(m.event_category)} • ${escapeHtml(m.status)} • ${escapeHtml(formatStartTime(m.startTime))}</small>
-      </div>
-      <div>
-        <button class="btn playBtn">Play</button>
-      </div>`;
-    const btn = el.querySelector('.playBtn');
-    btn.addEventListener('click', ()=>{onSelectMatch(m)});
-    matchesList.appendChild(el);
-  });
-}
-
-function escapeHtml(s){ return (s+'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[c]); }
-
-function onSelectMatch(m){
-  nowTitle.querySelector('strong').textContent = m.title || m.match_name;
-  nowMeta.textContent = `${m.team_1||''} vs ${m.team_2||''} · ${m.event_name||''} · ${m.status||''}`;
-  openInNewTab.onclick = ()=>{
-    // attempt a sensible match page URL (may vary by provider)
-    const url = `https://www.fancode.com/match/${m.match_id}`;
-    window.open(url, '_blank');
-  };
-  // prefer adfree_url > dai_url > direct url fields
-  const candidates = [m.adfree_url, m.dai_url];
-  // try each candidate
-  let played = false;
-  for(const c of candidates){ if(c){ played = tryPlaySource(c); if(played) break; }}
-  if(!played){
-    // no direct urls in the JSON — try to embed the match page
-    const embedUrl = `https://www.fancode.com/match/${m.match_id}`;
-    // try iframe; if blocked by X-Frame-Options browser will refuse — fallback is to open in new tab
-    try{ played = tryPlaySource(embedUrl); }
-    catch(e){ played=false; }
-    if(!played){ clearVideo(); setTimeout(()=>{ alert('This site may block embedding. The match page will open in a new tab.'); window.open(embedUrl,'_blank'); },50); }
-  }
-  // set download button behavior
-  downloadVideo.onclick = ()=>{
-    const url = m.adfree_url || m.dai_url;
-    if(!url){ alert('No direct downloadable video URL available in the provided JSON.'); return; }
-    // open url (browser will handle download if supported)
-    window.open(url,'_blank');
-  }
-}
-
-// initial render
-renderList(data.matches.slice(0,50));
-
-// filters & search
-document.getElementById('filterSport').addEventListener('change', applyFilters);
-document.getElementById('filterStatus').addEventListener('change', applyFilters);
-document.getElementById('search').addEventListener('input', applyFilters);
-document.getElementById('sortTime').addEventListener('click', ()=>{ sortAscending=!sortAscending; document.getElementById('sortTime').textContent = sortAscending? 'Sort by start time ▲' : 'Sort by start time ▼'; applyFilters(); });
-document.getElementById('showAll').addEventListener('click', ()=>{ renderList(data.matches); });
-
-function applyFilters(){
-  const sport = document.getElementById('filterSport').value;
-  const status = document.getElementById('filterStatus').value;
-  const q = document.getElementById('search').value.trim().toLowerCase();
-  let list = data.matches.filter(m=>{
-    if(sport!=='all' && m.event_category!==sport) return false;
-    if(status!=='all' && m.status!==status) return false;
-    if(q && !((m.title||'').toLowerCase().includes(q) || (m.team_1||'').toLowerCase().includes(q) || (m.team_2||'').toLowerCase().includes(q))) return false;
-    return true;
-  });
-  // try sort by startTime if parsable
-  list.sort((a,b)=>{
-    const ta = Date.parse(normalizeDate(a.startTime)||'');
-    const tb = Date.parse(normalizeDate(b.startTime)||'');
-    if(isNaN(ta) || isNaN(tb)) return 0;
-    return sortAscending ? ta - tb : tb - ta;
-  });
-  renderList(list);
-}
-
-function normalizeDate(s){ // naive convert '05:00:00 AM 17-09-2025' to ISO
-  if(!s) return null;
-  const parts = s.split(' ');
-  if(parts.length<3) return s;
-  const time = parts[0]; const ampm = parts[1]; const d = parts[2];
-  const [hh,mm,ss] = time.split(':').map(Number);
-  let hour = hh % 12; if(ampm.toUpperCase().includes('PM')) hour += 12;
-  const [day,month,year] = d.split('-').map(Number);
-  return new Date(Date.UTC(year, month-1, day, hour, mm, ss)).toISOString();
-}
-
-</script>
+    data.matches.forEach(match => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <h3>${match.title}</h3>
+        <p>Sport: ${match.sport}</p>
+        <p>Status: ${match.status}</p>
+      `;
+      card.addEventListener('click', () => {
+        const url = `https://www.fancode.com/match/${match.id}`;
+        window.open(url, '_blank');
+      });
+      container.appendChild(card);
+    });
+  </script>
 </body>
 </html>
