@@ -5,11 +5,23 @@
   <title>Fancode Live Matches</title>
   <style>
     body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 20px; }
-    .match-card { background: #fff; padding: 15px; margin: 10px 0; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; align-items: center; }
+    .match-card { 
+      background: #fff; 
+      padding: 15px; 
+      margin: 10px 0; 
+      border-radius: 10px; 
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+      display: flex; 
+      align-items: center; 
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .match-card:hover { transform: scale(1.02); }
     .match-card img { width: 120px; height: auto; margin-right: 15px; border-radius: 8px; }
     .match-info { flex: 1; }
     .status { font-weight: bold; color: green; }
     .status.UPCOMING { color: orange; }
+    a { text-decoration: none; color: inherit; }
   </style>
 </head>
 <body>
@@ -26,6 +38,10 @@
       const matchesDiv = document.getElementById("matches");
 
       data.matches.forEach(match => {
+        const link = document.createElement("a");
+        link.href = match.link;   // <-- m3u8 link from JSON
+        link.target = "_blank";   // <-- open in new tab
+
         const card = document.createElement("div");
         card.className = "match-card";
 
@@ -40,7 +56,8 @@
           </div>
         `;
 
-        matchesDiv.appendChild(card);
+        link.appendChild(card);
+        matchesDiv.appendChild(link);
       });
     }
 
