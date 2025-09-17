@@ -61,31 +61,32 @@
   <div class="matches" id="matches"></div>
 
   <script>
-    const data = {
-      "matches": [
-        {"id": "cricket-001", "title": "India vs Australia", "sport": "Cricket", "status": "live"},
-        {"id": "football-001", "title": "FC Barcelona vs Real Madrid", "sport": "Football", "status": "upcoming"},
-        {"id": "baseball-001", "title": "Yankees vs Red Sox", "sport": "Baseball", "status": "live"},
-        {"id": "golf-001", "title": "PGA Tour Finals", "sport": "Golf", "status": "upcoming"}
-      ]
-    };
-
     const container = document.getElementById('matches');
 
-    data.matches.forEach(match => {
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `
-        <h3>${match.title}</h3>
-        <p>Sport: ${match.sport}</p>
-        <p>Status: ${match.status}</p>
-      `;
-      card.addEventListener('click', () => {
-        const url = `https://www.fancode.com/match/${match.id}`;
-        window.open(url, '_blank');
+    // Use the raw JSON link from GitHub
+    fetch("https://raw.githubusercontent.com/drmlive/fancode-live-events/main/fancode.json")
+      .then(res => res.json())
+      .then(data => {
+        container.innerHTML = "";
+        data.matches.forEach(match => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <h3>${match.title}</h3>
+            <p>Sport: ${match.sport}</p>
+            <p>Status: ${match.status}</p>
+          `;
+          card.addEventListener('click', () => {
+            const url = `https://www.fancode.com/match/${match.id}`;
+            window.open(url, '_blank');
+          });
+          container.appendChild(card);
+        });
+      })
+      .catch(err => {
+        console.error("Error fetching JSON:", err);
+        container.innerHTML = "<p style='color:red;'>Failed to load matches.</p>";
       });
-      container.appendChild(card);
-    });
   </script>
 </body>
 </html>
