@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -66,10 +65,9 @@
 
         card.querySelector(".play-btn").addEventListener("click", () => {
           if (match.adfree_url) {
-            // Cut everything after `.m3u8`
-            let cleanUrl = match.adfree_url;
-            console.log("Opening clean adfree_url:", cleanUrl);
-            window.open(cleanUrl, "_blank");
+            let cleanUrl = match.adfree_url; 
+            let playerUrl = `https://cinearena.live/hls-plyr.html?url=${encodeURIComponent(cleanUrl)}`;
+            window.open(playerUrl, "_blank");
           } else {
             alert("No adfree_url available for this match!");
           }
